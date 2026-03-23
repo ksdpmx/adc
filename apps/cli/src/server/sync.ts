@@ -6,15 +6,16 @@ import type { RequestHandler } from 'express';
 import { omit, toString } from 'lodash';
 import { lastValueFrom, toArray } from 'rxjs';
 
-import {
-  fillLabels,
-  filterConfiguration,
-  filterResourceType,
-  loadBackend,
-} from '../command/utils';
+
+
+import { fillLabels, filterConfiguration, filterResourceType, loadBackend } from '../command/utils';
 import { check } from '../linter';
 import { logger } from './logger';
 import { SyncInput, type SyncInputType } from './schema';
+
+
+
+
 
 // create connection pool
 const keepAlive: HttpOptions = {
@@ -50,6 +51,12 @@ export const syncHandler: RequestHandler<
       });
     const { task } = parsedInput.data;
 
+    logger.log({
+      level: 'info',
+      message: 'debugdebugdebug task',
+      task: JSON.stringify(task ?? null),
+    });
+
     // load local configuration and validate it
     //TODO: merged with the listr task
     const local = filterResourceType(
@@ -65,7 +72,17 @@ export const syncHandler: RequestHandler<
           errors: result.error.issues,
         });
     }
+    logger.log({
+      level: 'info',
+      message: 'debugdebugdebug local',
+      local: JSON.stringify(local ?? null),
+    });
     fillLabels(local, task.opts.labelSelector);
+    logger.log({
+      level: 'info',
+      message: 'debugdebugdebug local fillLabels',
+      local: JSON.stringify(local ?? null),
+    });
 
     // load and filter remote configuration
     const backend = loadBackend(task.opts.backend, {
@@ -102,7 +119,17 @@ export const syncHandler: RequestHandler<
       task.opts.includeResourceType,
       task.opts.excludeResourceType,
     );
+    logger.log({
+      level: 'info',
+      message: 'debugdebugdebug remote',
+      remote: JSON.stringify(remote ?? null),
+    });
     [remote] = filterConfiguration(remote, task.opts.labelSelector);
+    logger.log({
+      level: 'info',
+      message: 'debugdebugdebug remote filterConfiguration',
+      remote: JSON.stringify(remote ?? null),
+    });
 
     // diff local and remote configuration
     const diff = DifferV3.diff(

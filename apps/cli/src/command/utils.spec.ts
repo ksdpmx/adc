@@ -2,6 +2,7 @@ import * as ADCSDK from '@api7/adc-sdk';
 
 import {
   fillLabels,
+  filterConfiguration,
   recursiveRemoveMetadataField,
   recursiveReplaceEnvVars,
 } from './utils';
@@ -251,6 +252,48 @@ describe('CLI utils', () => {
         },
       ],
       ssls: [{ certificates: [], snis: ['test'] }],
+    });
+  });
+
+  it('should filter global rules by label selector', () => {
+    const [filtered, removed] = filterConfiguration(
+      {
+        global_rules: {
+          prometheus: {
+            labels: { team: '1' },
+            prefer_name: true,
+          },
+          'file-logger': {
+            labels: { team: '2' },
+            path: '/tmp/access.log',
+          },
+          skywalking: {
+            sample_ratio: 1,
+          },
+        },
+      } as ADCSDK.Configuration,
+      { team: '1' },
+    );
+
+    expect(filtered).toEqual({
+      global_rules: {
+        prometheus: {
+          labels: { team: '1' },
+          prefer_name: true,
+        },
+      },
+    });
+
+    expect(removed).toEqual({
+      global_rules: {
+        'file-logger': {
+          labels: { team: '2' },
+          path: '/tmp/access.log',
+        },
+        skywalking: {
+          sample_ratio: 1,
+        },
+      },
     });
   });
 

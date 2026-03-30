@@ -131,8 +131,14 @@ export const filterConfiguration = (
 ): [ADCSDK.Configuration, ADCSDK.Configuration] => {
   const removed: ADCSDK.Configuration = {};
   Object.keys(configuration).forEach((resourceType) => {
-    if (resourceType === 'plugin_metadata' || resourceType === 'global_rules')
+    if (resourceType === 'plugin_metadata')
       return;
+    if (resourceType === 'global_rules') {
+      const result = globalRuleFilter(configuration.global_rules, rules);
+      configuration.global_rules = result.filtered;
+      removed.global_rules = result.removed;
+      return;
+    }
     const result = labelFilter(configuration[resourceType], rules);
     configuration[resourceType] = result.filtered;
     removed[resourceType] = result.removed;
@@ -157,6 +163,29 @@ const labelFilter = <T extends ADCSDK.Event['newValue']>(
   return {
     filtered,
     removed: resources.filter((resource) => !filtered.includes(resource)),
+  };
+};
+
+const globalRuleFilter = (
+  resources: ADCSDK.Configuration['global_rules'] = {},
+  rules: Record<string, string> = {},
+) => {
+  const entries = Object.entries(resources ?? {});
+  const filteredEntries = entries.filter(([, pluginConfig]) =>
+    Object.entries(rules).every(
+      ([key, value]) =>
+        isObject(pluginConfig) &&
+        isObject(pluginConfig.labels) &&
+        pluginConfig.labels[key] === value,
+    ),
+  );
+  const filtered = Object.fromEntries(filteredEntries);
+
+  return {
+    filtered,
+    removed: Object.fromEntries(
+      entries.filter(([pluginName]) => !(pluginName in filtered)),
+    ),
   };
 };
 
